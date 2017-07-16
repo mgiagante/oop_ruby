@@ -89,6 +89,10 @@ module TicTacToe
       "#{left}|#{center}|#{right}\n" +
       "#{bottom_left}|#{bottom}|#{bottom_right}\n"
     end
+
+    def three_in_a_row?(player)
+      # TODO: Make it return whether player has 3 marks in a row on this board.
+    end
   end
 
   class Cell
@@ -135,6 +139,7 @@ module TicTacToe
         GUI.show_board(@game_board)
         choice = GUI.read_play_for(player)
         @game_board.mark_choice_for_player(choice, player)
+        @player.mark_as_winner if @game_board.three_in_a_row?(player)
         break if ended_in_a_draw? || winner
       end
     end
@@ -151,6 +156,10 @@ module TicTacToe
 
     def has_won?
       @has_won
+    end
+
+    def mark_as_winner
+      @has_won = true
     end
   end
 end
