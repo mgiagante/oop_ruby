@@ -150,7 +150,7 @@ module TicTacToe
 
     def initialize(name, token)
       @name = name
-      @has_won = false # TODO: Implement the condition that sets @has_won to true
+      @has_won = false
       @token = token
     end
 
