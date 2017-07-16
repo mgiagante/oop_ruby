@@ -4,7 +4,6 @@ module TicTacToe
   def self.play
     match = Match.new(GUI.read_player_names)
     match.play
-    GUI.show_winner_for(match)
   end
 
   class GUI
@@ -25,6 +24,16 @@ module TicTacToe
 
     def self.show_board(game_board)
       puts game_board
+      puts
+    end
+
+    def self.clear_screen
+      Gem.win_platform? ? (system "cls") : (system "clear")
+    end
+
+    def self.announce_draw
+      clear_screen
+      puts "The match ended in a draw!"
     end
   end
 
@@ -117,13 +126,16 @@ module TicTacToe
 
     def play
       play_round until ended_in_a_draw? || winner
+      winner ? GUI.show_winner_for(self) : GUI.announce_draw
     end
 
     def play_round
       @players.each do |player| 
+        GUI.clear_screen
         GUI.show_board(@game_board)
         choice = GUI.read_play_for(player)
         @game_board.mark_choice_for_player(choice, player)
+        break if ended_in_a_draw? || winner
       end
     end
   end
