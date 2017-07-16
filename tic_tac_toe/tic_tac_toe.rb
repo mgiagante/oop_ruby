@@ -59,7 +59,7 @@ module TicTacToe
       coords ? @matrix.cell(*coords) : super
     end
 
-    def mark_choice_for_player(choice, player)
+    def mark_choice_for_player(number, player)
       mappings = {
         1 => :top_left,
         2 => :top,
@@ -71,8 +71,8 @@ module TicTacToe
         8 => :bottom,
         9 => :bottom_right
       }
-
-      self.public_send(mappings[choice]).mark_for(player)
+      position = mappings[number]
+      self.public_send(position).mark_for(player)
     end
 
     def to_s
