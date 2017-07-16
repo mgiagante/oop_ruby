@@ -2,10 +2,29 @@ require './matrix'
 
 module TicTacToe
   def self.play
-    match = Match.new(read_player_names)
+    match = Match.new(GUI.read_player_names)
+    match.play
+    GUI.show_winner_for(match)
+  end
 
-    until match.has_a_winner? do 
-      match.play_round
+  class GUI
+    def self.read_player_names
+      [1, 2].map do |number|
+        puts "Enter a name for player #{number}"
+        gets.chomp
+      end
+    end
+
+    def self.read_play_for(player)
+      puts "1|2|3"
+      puts "4|5|6"
+      puts "7|8|9"
+      puts "#{player.name}, choose a play:" 
+      gets.chomp.to_i
+    end
+
+    def self.show_board(game_board)
+      puts game_board
     end
   end
 
@@ -18,7 +37,7 @@ module TicTacToe
     
     def is_full?
       (1..3).all? do |row_number|
-        (1..3).none? { |column_number| @matrix.cell(row_number, column_number).empty? }
+        (1..3).none? { |column_number| @matrix.cell(row_number, column_number).free? }
       end
     end
 
@@ -39,25 +58,52 @@ module TicTacToe
       coords = positions[method_name.to_sym]
       coords ? @matrix.cell(*coords) : super
     end
+
+    def mark_choice_for_player(choice, player)
+      mappings = {
+        1 => :top_left,
+        2 => :top,
+        3 => :top_right,
+        4 => :left,
+        5 => :center,
+        6 => :right,
+        7 => :bottom_left,
+        8 => :bottom,
+        9 => :bottom_right
+      }
+
+      self.public_send(mappings[choice]).mark_for(player)
+    end
+
+    def to_s
+      "#{top_left}|#{top}|#{top_right}\n" +
+      "#{left}|#{center}|#{right}\n" +
+      "#{bottom_left}|#{bottom}|#{bottom_right}\n"
+    end
   end
 
   class Cell
     def initialize
-      @content = :nothing
+      @owner = nil
     end
 
-    def empty?
-      @content == :nothing
+    def free?
+      !@owner
     end
 
     def mark_for(player)
-      @content = player.name.to_sym
+      @owner = player
+    end
+
+    def to_s
+      free? ? " " : @owner.token
     end
   end
 
   class Match
     def initialize(player_names)
-      @players = player_names.map { |name| Player.new(name) }.shuffle
+      @players = [Player.new(player_names.first, 'X'), Player.new(player_names.last, 'O')]
+      @players.shuffle!
       @game_board = GameBoard.new
     end
 
@@ -65,48 +111,36 @@ module TicTacToe
       @players.find { |player| player.has_won? }
     end
 
-    def has_a_winner?
-      !winner.nil?
+    def ended_in_a_draw?
+      @game_board.is_full? && !winner
     end
 
-    def ended_in_a_draw?
-      @game_board.is_full? && !has_a_winner?
+    def play
+      play_round until ended_in_a_draw? || winner
     end
 
     def play_round
-      require "pry"; binding.pry
       @players.each do |player| 
-        player.play unless ended_in_a_draw? || has_a_winner?
+        GUI.show_board(@game_board)
+        choice = GUI.read_play_for(player)
+        @game_board.mark_choice_for_player(choice, player)
       end
     end
   end
 
   class Player
-    attr_reader :name
+    attr_reader :name, :token
 
-    def initialize(name)
+    def initialize(name, token)
       @name = name
       @has_won = false # TODO: Implement the condition that sets @has_won to true
+      @token = token
     end
 
     def has_won?
       @has_won
     end
-
-    def play
-      # TODO: Implement playing on the game board
-      require "pry"; binding.pry
-    end
-  end
-
-  private
-
-  def self.read_player_names
-    [1, 2].map do |number|
-      puts "Enter a name for player #{number}"
-      gets.chomp
-    end
   end
 end
 
-#TicTacToe.play # Asks for the names of the players and starts the game loop. When game ends, it displays the name of the winner.
+TicTacToe.play # Asks for the names of the players and starts the game loop. When game ends, it displays the name of the winner.
