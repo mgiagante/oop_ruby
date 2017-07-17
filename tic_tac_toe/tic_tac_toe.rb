@@ -1,6 +1,10 @@
 require './matrix'
 
 module TicTacToe
+  module Exceptions
+    class CellNotFreeError < RuntimeError; end
+  end
+
   def self.play
     match = Match.new(GUI.read_player_names)
     match.play
@@ -15,11 +19,15 @@ module TicTacToe
     end
 
     def self.read_play_for(player)
-      puts "1|2|3"
-      puts "4|5|6"
-      puts "7|8|9"
-      puts "#{player.name}, choose a play:" 
-      gets.chomp.to_i
+      play = nil
+      until (1..9).include? play do
+        puts "1|2|3"
+        puts "4|5|6"
+        puts "7|8|9"
+        puts "#{player.name}, choose a play:" 
+        play = gets.chomp.to_i
+      end
+      play
     end
 
     def self.show_board(game_board)
@@ -34,6 +42,11 @@ module TicTacToe
     def self.announce_draw
       clear_screen
       puts "The match ended in a draw!"
+    end
+
+    def self.show_winner_for(match)
+      clear_screen
+      puts "The winner is #{match.winner.name} !!!"
     end
   end
 
@@ -81,6 +94,7 @@ module TicTacToe
         9 => :bottom_right
       }
       position = mappings[number]
+      raise Exceptions::CellNotFreeError, "This cell is not free!" unless self.public_send(position).free?
       self.public_send(position).mark_for(player)
     end
 
@@ -91,7 +105,26 @@ module TicTacToe
     end
 
     def three_in_a_row?(player)
-      # TODO: Make it return whether player has 3 marks in a row on this board.
+      winning_combinations = [
+        [:top_left, :top, :top_right],
+        [:left, :center, :right],
+        [:bottom_left, :bottom, :bottom_right],
+        [:top_left, :left, :bottom_left],
+        [:top, :center, :bottom],
+        [:top_right, :right, :bottom_right],
+        [:top_left, :center, :bottom_right],
+        [:top_right, :center, :bottom_left]
+      ]
+      winning_combinations.any? { |combination| has_all?(combination, player) }
+    end
+
+    private
+
+    def has_all?(combination, player)
+      combination.reduce(true) do |result, position|
+        cell = self.public_send(position)
+        result && cell.owned_by?(player)
+      end
     end
   end
 
@@ -106,6 +139,10 @@ module TicTacToe
 
     def mark_for(player)
       @owner = player
+    end
+
+    def owned_by?(player)
+      @owner == player
     end
 
     def to_s
@@ -137,10 +174,15 @@ module TicTacToe
       @players.each do |player| 
         GUI.clear_screen
         GUI.show_board(@game_board)
+        break if ended_in_a_draw? || winner
+      begin
         choice = GUI.read_play_for(player)
         @game_board.mark_choice_for_player(choice, player)
-        @player.mark_as_winner if @game_board.three_in_a_row?(player)
-        break if ended_in_a_draw? || winner
+      rescue Exceptions::CellNotFreeError => e
+        puts e.message
+        retry
+      end
+        player.mark_as_winner if @game_board.three_in_a_row?(player)
       end
     end
   end
